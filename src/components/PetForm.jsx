@@ -132,7 +132,7 @@ function PetForm({ onComplete, showOwnerFields = true }) {
                         <label className="text-sm text-gray-600 mb-1 block">Owner Name</label>
                         <input
                             type="text"
-                            placeholder="Enter your name"
+                            placeholder="Enter owner name"
                             value={ownerName}
                             onChange={(e) => setOwnerName(e.target.value)}
                             required
