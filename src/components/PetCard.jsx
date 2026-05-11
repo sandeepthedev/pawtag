@@ -30,8 +30,9 @@ function PetCard({ pet, onEdit }) {
 
             <div className="mt-2 pt-3 border-t border-gray-50 flex justify-between items-center">
                 <span className="text-[10px] text-gray-400">Added {new Date(pet.createdAt?.toDate?.() || pet.createdAt).toLocaleDateString()}</span>
-                <button className="text-orange-500 hover:text-orange-600">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button className="flex items-center gap-1 text-sm font-bold text-orange-500 hover:text-orange-600 transition-colors">
+                    View
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                     </svg>
                 </button>
