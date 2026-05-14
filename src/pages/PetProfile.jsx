@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore'
+import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import db from '../firebase/db'
 import QRCard from '../components/QRCard'
 
@@ -11,6 +12,35 @@ function PetProfile() {
     const [contacts, setContacts] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [currentUser, setCurrentUser] = useState(null)
+    const [isUpdatingImage, setIsUpdatingImage] = useState(false)
+
+    useEffect(() => {
+        const auth = getAuth()
+        const unsubscribe = onAuthStateChanged(auth, (u) => {
+            setCurrentUser(u)
+        })
+        return () => unsubscribe()
+    }, [])
+
+    const isOwner = currentUser?.uid === uid
+
+    const toggleImageVisibility = async () => {
+        if (!isOwner || isUpdatingImage) return
+        setIsUpdatingImage(true)
+        try {
+            const petRef = doc(db, 'users', uid, 'pets', petId)
+            const currentVisibility = petData.isImagePublic !== false
+            const newVisibility = !currentVisibility
+            await updateDoc(petRef, { isImagePublic: newVisibility })
+            setPetData({ ...petData, isImagePublic: newVisibility })
+        } catch (err) {
+            console.error("Error updating image visibility:", err)
+            alert("Failed to update image visibility.")
+        } finally {
+            setIsUpdatingImage(false)
+        }
+    }
 
     useEffect(() => {
         const fetchData = async () => {
@@ -74,6 +104,24 @@ function PetProfile() {
                             <h1 className="text-3xl font-bold text-gray-800">{petData.name}</h1>
                             <p className="text-orange-500 font-medium">{petData.species || 'Pet'}</p>
                         </div>
+                        {petData.photoURL && (petData.isImagePublic !== false || isOwner) && (
+                            <div className="flex flex-col items-center gap-2">
+                                <img 
+                                    src={petData.photoURL} 
+                                    alt={petData.name} 
+                                    className={`w-20 h-20 rounded-full object-cover shadow-sm border-2 ${petData.isImagePublic !== false ? 'border-orange-100' : 'border-gray-200 opacity-50 grayscale'}`}
+                                />
+                                {isOwner && (
+                                    <button 
+                                        onClick={toggleImageVisibility}
+                                        disabled={isUpdatingImage}
+                                        className="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600 font-medium transition disabled:opacity-50"
+                                    >
+                                        {petData.isImagePublic !== false ? 'Hide from public' : 'Show to public'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                     {(petData.breed || petData.dob) && (
                         <div className="pt-4 border-t border-gray-100 space-y-2">

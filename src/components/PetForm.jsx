@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { getAuth } from 'firebase/auth'
 import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import db from '../firebase/db'
+import storage from '../firebase/storage'
 
 function PetForm({ onComplete, showOwnerFields = true }) {
     const [petName, setPetName] = useState('')
@@ -10,6 +12,8 @@ function PetForm({ onComplete, showOwnerFields = true }) {
     const [dob, setDob] = useState('')
     const [ownerName, setOwnerName] = useState('')
     const [contacts, setContacts] = useState([''])
+    const [petImage, setPetImage] = useState(null)
+    const [isImagePublic, setIsImagePublic] = useState(true)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
@@ -37,12 +41,22 @@ function PetForm({ onComplete, showOwnerFields = true }) {
             const user = auth.currentUser
             if (!user) throw new Error("No user logged in")
 
-            // 1. Save Pet Data
+            // 1. Upload Pet Image if exists
+            let photoURL = ''
+            if (petImage) {
+                const imageRef = ref(storage, `pets/${user.uid}/${Date.now()}_${petImage.name}`)
+                await uploadBytes(imageRef, petImage)
+                photoURL = await getDownloadURL(imageRef)
+            }
+
+            // 2. Save Pet Data
             const petRef = await addDoc(collection(db, 'users', user.uid, 'pets'), {
                 name: petName,
                 species,
                 breed,
                 dob,
+                photoURL,
+                isImagePublic,
                 createdAt: serverTimestamp()
             })
 
@@ -122,6 +136,27 @@ function PetForm({ onComplete, showOwnerFields = true }) {
                         onChange={(e) => setDob(e.target.value)}
                         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     />
+                </div>
+                <div>
+                    <label className="text-sm text-gray-600 mb-1 block">Pet Image (Optional)</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setPetImage(e.target.files[0])}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        id="isImagePublic"
+                        checked={isImagePublic}
+                        onChange={(e) => setIsImagePublic(e.target.checked)}
+                        className="w-4 h-4 text-orange-500 focus:ring-orange-400 border-gray-300 rounded"
+                    />
+                    <label htmlFor="isImagePublic" className="text-sm text-gray-600">
+                        Show pet image on public profile
+                    </label>
                 </div>
             </div>
 
